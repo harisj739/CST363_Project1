@@ -16,8 +16,8 @@ public class DataGenerate {
 
     // USE THESE VARS TO CONNECT TO SERVER
     public static final String user = "root";
-    public static final String pw = "Ballislife45!";
-    public static final String server = "jdbc:mysql://localhost:3306/mydb";
+    public static final String pw = "$hazia@#Mehreen30739";
+    public static final String server = "jdbc:mysql://localhost:3306/project1";
 
     // Constants for number of patients, doctors and scripts
     public static final int doctorCount = 10;
@@ -49,7 +49,9 @@ public class DataGenerate {
 
         // create 500 random patients, use doctors list to populate primary id and primary name
         for (int i = 0; i < patientCount; i++) {
-            patients.add(getPatient(i + 1, doctors.get(new Random().nextInt(doctors.size()))));
+        	
+//        	patients.add(getPatient(i + 1, doctors.get(new Random().nextInt(doctors.size()))));
+        	patients.add(getPatient(doctors.get(new Random().nextInt(doctors.size()))));
         }
 
         // make connection
@@ -74,9 +76,9 @@ public class DataGenerate {
                 ps.setString(3, p.getFirst_name());
                 ps.setString(4, p.getLast_name());
                 ps.setDate(5, p.getBirthdate());
-                ps.setString(6, p.getStreet()());
+                ps.setString(6, p.getStreet());
                 ps.setString(7, p.getCity());
-                ps.setString(8, p.getgetState());
+                ps.setString(8, p.getState());
                 ps.setInt(9, p.getZipcode());
                 ps.setString(10, p.getPrimaryName());
                 ps.executeUpdate();
@@ -105,7 +107,7 @@ public class DataGenerate {
             SSN = randomSSN();
             doc.setDoctorname(name);
             doc.setDoctorssn(SSN);
-        } while (!Sanitizer.isName(name) || !Sanitizer.isSSN(SSN));
+        } while (!Sanitizer.isString(name) || !Sanitizer.isSSN(SSN));
 
         doc.setSpecialty(randomSpecialty());
         doc.setStartdate(Date.valueOf((new Random().nextInt(60) + 1960) + "-01-01"));
@@ -113,9 +115,9 @@ public class DataGenerate {
     }
 
     // generate a patient
-    public static Patient getPatient(int id, Doctor primaryID) {
+    public static Patient getPatient(Doctor primaryID) {
         Patient p = new Patient();
-        p.setPatientId(id);
+//        p.setPatientId(id);
         p.setSsn(randomSSN());
         p.setFirst_name(randomFirstName());
         p.setLast_name(randomLastName());
@@ -124,7 +126,8 @@ public class DataGenerate {
         p.setCity(randomCity());
         p.setState(randomState());
         p.setZipcode(randomZip());
-        p.setPrimaryID(primaryID.getDoctorssn());
+//        p.setPrimaryID(primaryID.getDoctorssn());
+        p.setPrimaryName(randomFullName());
         return p;
     }
 
@@ -145,7 +148,7 @@ public class DataGenerate {
     public static String insertPrescription(Doctor d, Patient p) {
         int drug_id = new Random().nextInt(100) + 1;
         int quantity = new Random().nextInt(10) + 1;
-        return "INSERT INTO prescription (doctorssn, patientId, drug_id, quantity) " +
+        return "INSERT INTO prescription (doctorssn, patientId, quantity) " +
                 "VALUES (" + d.getDoctorssn() + ", " + p.getPatientId() + ", " + drug_id + ", " + quantity + ")";
     }
 
