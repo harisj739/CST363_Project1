@@ -59,7 +59,8 @@ public class DataGenerate {
             // insert doctors
             for (Doctor d : doctors) {
                 ps = con.prepareStatement(insertDoctorStatement(d));
-                ps.execute();
+                ps.setInt(1, d.
+                ps.executeUpdate();
             }
 
             // insert patients
@@ -117,7 +118,7 @@ public class DataGenerate {
     // construct insert statement for doctors
     public static String insertDoctorStatement(Doctor d) {
         return "INSERT INTO doctor (doctorssn, doctorname, specialty, startdate) " +
-                "VALUES (" + d.getDoctorssn() + ", '" + d.getDoctorname() + "', '" + d.getSpecialty() + "', '" + d.getStartdate() + "')";
+                "VALUES (?, ?, ?, ?)";
     }
 
  // construct insert statement for patients
