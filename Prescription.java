@@ -9,12 +9,10 @@ public class Prescription {
 	// following fields are set when doctor creates a prescription.
 	private String drugName;
 	private int quantity;
-	private String patient_ssn;
-	private String patientFirstName;
-	private String patientLastName;
-	private String doctor_ssn;
-	private String doctorFirstName;
-	private String doctorLastName;
+	private String patientSsn;
+	private String patientName;
+	private int doctorssn;
+	private String doctorName;
 	// following fields will be null or blank until prescription has been filled.
 	private String pharmacyID;    
 	private String pharmacyAddress; 
@@ -42,43 +40,29 @@ public class Prescription {
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
 	}
-	public String getPatient_ssn() {
-		return patient_ssn;
+	public String getPatientSsn() {
+		return patientSsn;
 	}
-	public void setPatient_ssn(String patient_ssn) {
-		this.patient_ssn = patient_ssn;
+	public void setPatientSsn(String patientSsn) {
+		this.patientSsn = patientSsn;
 	}
-
-	public String getPatientFirstName() {
-		return patientFirstName;
+	public String getPatientName() {
+		return patientName;
 	}
-	public void setPatientFirstName(String patientFirstName) {
-		this.patientFirstName = patientFirstName;
+	public void setPatientName(String patientName) {
+		this.patientName = patientName;
 	}
-	public String getPatientLastName() {
-		return patientLastName;
+    public int getDoctorssn() {
+        return doctorssn;
+    }
+    public void setDoctorssn(int doctorssn) {
+        this.doctorssn = doctorssn;
+    }
+	public String getDoctorName() {
+		return doctorName;
 	}
-	public void setPatientLastName(String patientLastName) {
-		this.patientLastName = patientLastName;
-	}
-	public String getDoctor_ssn() {
-		return doctor_ssn;
-	}
-	public void setDoctor_ssn(String doctor_ssn) {
-		this.doctor_ssn = doctor_ssn;
-	}
-
-	public String getDoctorFirstName() {
-		return doctorFirstName;
-	}
-	public void setDoctorFirstName(String doctorFirstName) {
-		this.doctorFirstName = doctorFirstName;
-	}
-	public String getDoctorLastName() {
-		return doctorLastName;
-	}
-	public void setDoctorLastName(String doctorLastName) {
-		this.doctorLastName = doctorLastName;
+	public void setDoctorName(String doctorName) {
+		this.doctorName = doctorName;
 	}
 	public String getPharmacyID() {
 		return pharmacyID;
@@ -110,20 +94,19 @@ public class Prescription {
 	public void setDateFilled(String dateFilled) {
 		this.dateFilled = dateFilled;
 	}
-	public String  getCost() {
+	public String getCost() {
 		return cost;
 	}
 	public void setCost(String cost) {
 		this.cost = cost;
 	}
+	
 	@Override
 	public String toString() {
-		return "Prescription [rxid=" + rxid + ", drugName=" + drugName + ", quantity=" + quantity + ", patient_ssn="
-				+ patient_ssn + ", patientFirstName=" + patientFirstName + ", patientLastName=" + patientLastName
-				+ ", doctor_ssn=" + doctor_ssn + ", doctorFirstName=" + doctorFirstName + ", doctorLastName="
-				+ doctorLastName + ", pharmacyID=" + pharmacyID + ", pharmacyAddress=" + pharmacyAddress
-				+ ", pharmacyPhone=" + pharmacyPhone + ", pharmacyName=" + pharmacyName + ", dateFilled=" + dateFilled
-				+ ", cost=" + cost + "]";
+		return "Prescription [rxid=" + rxid + ", drugName=" + drugName + ", quantity=" + quantity + ", patientSsn="
+				+ patientSsn + ", patientName=" + patientName + ", doctorSsn=" + doctorssn + ", doctorName="
+				+ doctorName + ", pharmacyID=" + pharmacyID + ", pharmacyAddress=" + pharmacyAddress + ", pharmacyName="
+				+ pharmacyName + ", dateFilled=" + dateFilled + ", cost=" + cost + "]";
 	}
 
 }
