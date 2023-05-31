@@ -69,7 +69,17 @@ public class DataGenerate {
             // insert patients
             for (Patient p : patients) {
                 ps = con.prepareStatement(insertPatientStatement(p));
-                ps.execute();
+                ps.setInt(1, p.getPatientId());
+                ps.setInt(2, p.getSsn());
+                ps.setString(3, p.getFirst_name());
+                ps.setString(4, p.getLast_name());
+                ps.setDate(5, p.getBirthdate());
+                ps.setString(6, p.getStreet()());
+                ps.setString(7, p.getCity());
+                ps.setString(8, p.getgetState());
+                ps.setInt(9, p.getZipcode());
+                ps.setString(10, p.getPrimaryName());
+                ps.executeUpdate();
             }
 
             // create random prescriptions and insert them by selecting random doctors and patients from lists
@@ -127,9 +137,7 @@ public class DataGenerate {
  // construct insert statement for patients
     public static String insertPatientStatement(Patient p) {
         return "INSERT INTO patient (patientid, patientssn, firstname, lastname, birthday, street, city, state, zip, primarydoctor) " +
-               "VALUES (" + p.getPatientId() + ", " + p.getSsn() + ", '" + p.getFirst_name() + "', '" + p.getLast_name() +
-               "', '" + p.getBirthdate() + "', '" + p.getStreet() + "', '" + p.getCity() + "', '" + p.getState() +
-               "', " + p.getZipcode() + ", '" + p.getPrimaryID() + "')";
+               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
 
