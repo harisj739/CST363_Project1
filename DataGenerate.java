@@ -59,7 +59,10 @@ public class DataGenerate {
             // insert doctors
             for (Doctor d : doctors) {
                 ps = con.prepareStatement(insertDoctorStatement(d));
-                ps.setInt(1, d.
+                ps.setInt(1, d.getDoctorssn());
+                ps.setString(2, d.getDoctorname());
+                ps.setString(3, d.getSpecialty());
+                ps.setDate(4, d.getStartdate());
                 ps.executeUpdate();
             }
 
