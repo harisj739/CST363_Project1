@@ -16,7 +16,7 @@ public class Doctor_load_data {
 		
 	static final String DBURL = "jdbc:mysql://localhost:3306/cst363";  // database URL
 	static final String USERID = "root";
-	static final String PASSWORD = "Ballislife45!";
+	static final String PASSWORD = "$hazia@#Mehreen30739";
 	
 	static final String[] specialties= {"Internal Medicine", "Family Medicine", "Pediatrics", "Orthpedics", "Dermatology", 
 			"Cardiology", "Gynecology", "Gastroenterology", "Psychiatry", "Oncology"};
@@ -83,7 +83,7 @@ public class Doctor_load_data {
 				String specialty = rs.getString("specialty");
 				String practice_since = rs.getString("practice_since");
 				String ssn = rs.getString("ssn");
-				System.out.printf("%10d   %-30s  %-20s %4s %11s \n", id, last_name+", "+first_name, specialty, practice_since, ssn);
+				System.out.printf("%10d%30s\n", id, last_name+", "+first_name, specialty, practice_since, ssn);
 			}
 		} catch (SQLException e) {
 			System.out.println("Error: SQLException "+e.getMessage());

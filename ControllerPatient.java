@@ -55,37 +55,75 @@ public class ControllerPatient {
 		try (Connection con = getConnection();) {
 			PreparedStatement ps = con.prepareStatement("insert into patient (lastname, firstname, birthday, patientssn, primarydoctor, street, city, state, zip)  values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
-			if (!p.getFirst_name().isEmpty() && !p.getLast_name().isEmpty()) {
+			
+			if (!p.getFirst_name().isEmpty() && !p.getLast_name().isEmpty() && !p.getPrimaryName().isEmpty()
+					&& Sanitizer.isString(p.getFirst_name()) && Sanitizer.isString(p.getLast_name()) && Sanitizer.isString(p.getPrimaryName())) {
 				ps.setString(1, p.getLast_name());
 				ps.setString(2, p.getFirst_name());
-			}
-			else {
-				model.addAttribute("message", "ERROR: Names cannot be empty, please try again.");
+				ps.setString(5, p.getPrimaryName());
+			} else {
+				model.addAttribute("message", "ERROR: Names cannot be empty and must only contain letters A-Z. Please try again.");
 				model.addAttribute("Patient", p);
 				return "patient_register";	
 			}
 			
-			if ((p.getBirthdate().getMonth() <= date.getMonth()) && (p.getBirthdate().getDay() <= date.getDay() - 1)) {
-				age = p.getBirthdate().getYear() - date.getYear();
-			}
-			else {
-				age = p.getBirthdate().getYear() - date.getYear() - 1;
-			}
+//			if(Sanitizer.isDOB(p.getBirthdate())) {
+//				ps.setDate(3, p.getBirthdate());
+//			}
+//			else {
+//				model.addAttribute("message", "ERROR: Invalid date: year must be in between 1900 to 2022 (inclusive), months 1 to 12 (inclusive), and days 1 to 31 (inclusive): " + p.getBirthdate().getYear());
+//				model.addAttribute("Patient", p);
+//				return "patient_register";
+//			}
 			
-			if (age >= 18) {
-				ps.setDate(3, p.getBirthdate());
-			}
-			else {
-				model.addAttribute("message", "ERROR: The patient must be 18 years or older.");
+			ps.setDate(3, p.getBirthdate());
+			
+			if(Sanitizer.isSSN(p.getSsn())) {
+				ps.setInt(4, p.getSsn());
+			} else {
+				model.addAttribute("message", "ERROR: The SSN must be 9 digits, cannot start with a 0 or a 9, the middle digits cannot be 00, and the last 4 digits cannot be 0000.");
 				model.addAttribute("Patient", p);
 				return "patient_register";	
 			}
-			ps.setInt(4, p.getSsn());
-			ps.setString(5, p.getPrimaryName());
+			
+//			if ((p.getBirthdate().getMonth() <= date.getMonth()) && (p.getBirthdate().getDay() <= date.getDay() - 1)) {
+//				age = p.getBirthdate().getYear() - date.getYear();
+//			}
+//			else {
+//				age = p.getBirthdate().getYear() - date.getYear() - 1;
+//			}
+//			
+//			if (age >= 18) {
+//				ps.setDate(3, p.getBirthdate());
+//			}
+//			else {
+//				model.addAttribute("message", "ERROR: The patient must be 18 years or older.");
+//				model.addAttribute("Patient", p);
+//				return "patient_register";	
+//			}
+			
 			ps.setString(6, p.getStreet());
-			ps.setString(7, p.getCity());
-			ps.setString(8, p.getState());
-			ps.setInt(9, p.getZipcode());
+			
+			if (!p.getCity().isEmpty() && !p.getState().isEmpty()
+					&& Sanitizer.isString(p.getCity())
+					&& Sanitizer.isString(p.getState())) {
+				ps.setString(7, p.getCity());
+				ps.setString(8, p.getState());
+			}
+			else {
+				model.addAttribute("message", "ERROR: The city and state cannot be empty and must only contain letters A-Z. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_register";	
+			}
+			
+			if(Sanitizer.isZip(p.getZipcode())) {
+				ps.setInt(9, p.getZipcode());
+			}
+			else {
+				model.addAttribute("message", "ERROR: The zipcode must be either exactly 5 or 9 digits long. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_register";
+			}
 			
 			String primaryName = p.getPrimaryName();
 			
@@ -279,5 +317,4 @@ public class ControllerPatient {
 		Connection conn = jdbcTemplate.getDataSource().getConnection();
 		return conn;
 	}
-
 }
