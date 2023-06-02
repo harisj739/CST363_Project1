@@ -1,7 +1,9 @@
 package com.csumb.cst363;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,7 +17,10 @@ public class ControllerPrescriptionFill {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-	
+
+	@Autowired
+	private Sanitizer Sanitizer;
+
 	/*
 	 * Patient requests form to search for prescription.
 	 */
@@ -24,7 +29,7 @@ public class ControllerPrescriptionFill {
 		model.addAttribute("prescription", new Prescription());
 		return "prescription_fill";
 	}
-	
+
 	/*
 	 * Process the prescription fill request from a patient.
 	 * 1. Validate that Prescription p contains rxid, pharmacy name, and pharmacy address
@@ -37,12 +42,11 @@ public class ControllerPrescriptionFill {
 	@PostMapping("/prescription/fill")
 	public String processFillForm(Prescription p, Model model) {
 		// Sanitize input data
-		String rxid = Sanitizer.isName(p.getRxid()) ? p.getRxid() : "";
-		String pharmacyName = Sanitizer.isName(p.getPharmacyName()) ? p.getPharmacyName() : "";
-		String pharmacyAddress = Sanitizer.isAddress(p.getPharmacyAddress()) ? p.getPharmacyAddress() : "";
+		String pharmacyName = Sanitizer.isString(p.getPharmacyName()) ? p.getPharmacyName() : "";
+		String pharmacyAddress = Sanitizer.isStreet(p.getPharmacyAddress()) ? p.getPharmacyAddress() : "";
 		
 		// Check if sanitized data matches original data
-		if (!rxid.equals(p.getRxid()) || !pharmacyName.equals(p.getPharmacyName())
+		if (!pharmacyName.equals(p.getPharmacyName())
 				|| !pharmacyAddress.equals(p.getPharmacyAddress())) {
 			model.addAttribute("message", "Invalid input data.");
 			model.addAttribute("prescription", p);
@@ -60,13 +64,13 @@ public class ControllerPrescriptionFill {
 		updatePrescription(p);
 		
 		// Update prescription with today's date
-		p.setDateFilled(new java.util.Date().toString());
+		p.setDateFilled(Date.valueOf(LocalDate.now()).toString());
 		
 		model.addAttribute("message", "Prescription has been filled.");
 		model.addAttribute("prescription", p);
 		return "prescription_show";
 	}
-	
+
 	/*
 	 * Return JDBC Connection using jdbcTemplate in Spring Server
 	 */
@@ -74,15 +78,16 @@ public class ControllerPrescriptionFill {
 		Connection conn = jdbcTemplate.getDataSource().getConnection();
 		return conn;
 	}
-	
+
 	// Method to validate prescription
 	private boolean validatePrescription(Prescription p) {
 		// Perform validation logic
 		// Return true if valid, false otherwise
-		return Sanitizer.isName(p.getRxid()) && Sanitizer.isName(p.getPharmacyName())
-				&& Sanitizer.isAddress(p.getPharmacyAddress());
+		return Sanitizer.isSSN(Integer.parseInt(p.getRxid())) && Sanitizer.isString(p.getPharmacyName())
+				&& Sanitizer.isStreet(p.getPharmacyAddress());
 	}
-	
+
+
 	// Method to update prescription with pharmacy information
 	private void updatePrescription(Prescription p) {
 		// Perform update logic
@@ -91,5 +96,5 @@ public class ControllerPrescriptionFill {
 		p.setPharmacyAddress("123 Main St");
 		p.setPharmacyName("Example Pharmacy");
 	}
-}
 
+}
