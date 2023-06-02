@@ -2,21 +2,29 @@ package com.csumb.cst363;
 
 import java.util.regex.Pattern;
 
+import org.springframework.stereotype.Service;
+
+import java.sql.Date;
+@Service
+
 public class Sanitizer {
 
     /**
      * This accepts a string and returns true if it is a valid date from 1900 to 2021
      */
-    public static boolean isDOB(String s){
-        String regex = "((19[0-9]{2})|(20(([0-1][0-9])|(2[0-1]))))-(02-(0[1-9]|[12][0-9])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|(0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))";
-        if (Pattern.matches(regex, s) )return true;
-        else return false;
+    public static boolean isDOB(Date d){
+		if ((d.getYear() >= 1900 && d.getYear() <= 2022 && d.getMonth() >= 1 && d.getMonth() <= 12 && d.getDay() >= 1
+				&& d.getDay() <= 31)) {
+			return true;
+		} else {
+			return false;
+		}
     }
     /**
     * This accepts a string and returns true if its an address
      * A valid name can contain letters (uppercase and lowercase), spaces, commas, hyphens, and apostrophes.
      */
-    public static boolean isAddress(String s) {
+    public static boolean isStreet(String s) {
         String regex = "[0-9a-zA-Z ,\\-\\.]+";
         if (Pattern.matches(regex, s)) return true;
         else return false;
@@ -26,7 +34,7 @@ public class Sanitizer {
      * This accepts a string and returns true if its a name
      * A valid name can contain letters (uppercase and lowercase), spaces, hyphens, and apostrophes.
      */
-    public static boolean isName(String s) {
+    public static boolean isString(String s) {
         String regex = "[a-z A-Z\\-']+";
        if (Pattern.matches(regex,s))return true;
        else return false;
@@ -36,18 +44,35 @@ public class Sanitizer {
      * This accepts an int and returns true if its a valid ssn
      */
     public static boolean isSSN(int ssn) {
+    	
         String ssnString = String.valueOf(ssn);
-        String regex = "^(?!000|666)(\\d{3}-?\\d{2}-?\\d{4})$";
-        return Pattern.matches(regex, ssnString);
+        if (ssnString.length() < 9 || ssnString.length() > 9) {
+        	return false;
+        }
+        else if (ssnString.charAt(0) == '0' || ssnString.charAt(0) == '9') {
+        	return false;
+        }
+        else if (ssnString.charAt(3) == '0' && ssnString.charAt(4) == '0') {
+        	return false;
+        }
+        else if (ssnString.charAt(5) == '0' && ssnString.charAt(6) == '0'
+        		&& ssnString.charAt(7) == '0' && ssnString.charAt(8) == '0') {
+        	return false;
+        }
+        return true;
     }
 
     /**
      * Accepts string. returns true if it is a valid zip containing 5 numbers excluding 00000
      */
-    public static boolean isZip(String s){
-        String regex ="(?!00000)[0-9]{5}";
-        if (Pattern.matches(regex, s)) return true;
-        else return false;
+    public static boolean isZip(int zip){
+    	String zipString = String.valueOf(zip);
+    	if (zipString.length() == 5 || zipString.length() == 9) {
+        	return true;
+        }
+    	else {
+    		return false;
+    	}
     }
 
     public static boolean isFullAddress(String s){
