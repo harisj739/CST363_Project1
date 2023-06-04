@@ -47,52 +47,89 @@ public class ControllerPatient {
 	 * Process new patient registration	 */
 	@PostMapping("/patient/new")
 	public String newPatient(Patient p, Model model) { 
-        
-        long millis=System.currentTimeMillis();  
-        Date date= new Date(millis);  
-        int age;
+        String dateStr = "";
+        int age = 0;
+        String primaryName = "";
 		// TODO
 		try (Connection con = getConnection();) {
 			PreparedStatement ps = con.prepareStatement("insert into patient (lastname, firstname, birthday, patientssn, primarydoctor, street, city, state, zip)  values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
-			if (!p.getFirst_name().isEmpty() && !p.getLast_name().isEmpty()) {
+			
+			if (!p.getFirst_name().isEmpty() && !p.getLast_name().isEmpty() && !p.getPrimaryName().isEmpty()
+					&& Sanitizer.isString(p.getFirst_name()) && Sanitizer.isString(p.getLast_name()) && Sanitizer.isString(p.getPrimaryName())) {
 				ps.setString(1, p.getLast_name());
 				ps.setString(2, p.getFirst_name());
-			}
-			else {
-				model.addAttribute("message", "ERROR: Names cannot be empty, please try again.");
+				primaryName = p.getPrimaryName();
+				ps.setString(5, p.getPrimaryName());
+			} else {
+				model.addAttribute("message", "ERROR: Names cannot be empty and must only contain letters A-Z. Please try again.");
 				model.addAttribute("Patient", p);
 				return "patient_register";	
 			}
 			
-			if ((p.getBirthdate().getMonth() <= date.getMonth()) && (p.getBirthdate().getDay() <= date.getDay() - 1)) {
-				age = p.getBirthdate().getYear() - date.getYear();
-			}
-			else {
-				age = p.getBirthdate().getYear() - date.getYear() - 1;
+			
+			if(Sanitizer.isSSN(p.getSsn())) {
+				ps.setInt(4, p.getSsn());
+			} else {
+				model.addAttribute("message", "ERROR: The SSN must be 9 digits, cannot start with a 0 or a 9, the middle digits cannot be 00, and the last 4 digits cannot be 0000.");
+				model.addAttribute("Patient", p);
+				return "patient_register";	
 			}
 			
-			if (age >= 18) {
+			if(Sanitizer.isDOB(p.getBirthdate())) {
 				ps.setDate(3, p.getBirthdate());
+			} else {
+				model.addAttribute("message", "ERROR: Invalid date: year must be in between 1900 to 2022 (inclusive), months 1 to 12 (inclusive), and days 1 to 31 (inclusive): " + dateStr);
+				model.addAttribute("Patient", p);
+				return "patient_register";
 			}
-			else {
-				model.addAttribute("message", "ERROR: The patient must be 18 years or older.");
+			
+			if(!p.getStreet().isEmpty() && Sanitizer.isStreet(p.getStreet())) {
+				ps.setString(6, p.getStreet());
+			} else {
+				model.addAttribute("message", "ERROR: The street must only contain letters and numerical digits.");
+				model.addAttribute("Patient", p);
+				return "patient_register";
+			}
+			
+			if (!p.getCity().isEmpty() && !p.getState().isEmpty()
+					&& Sanitizer.isString(p.getCity())
+					&& Sanitizer.isString(p.getState())) {
+				ps.setString(7, p.getCity());
+				ps.setString(8, p.getState());
+			} else {
+				model.addAttribute("message", "ERROR: The city and state cannot be empty and must only contain letters A-Z. Please try again.");
 				model.addAttribute("Patient", p);
 				return "patient_register";	
 			}
-			ps.setInt(4, p.getSsn());
-			ps.setString(5, p.getPrimaryName());
-			ps.setString(6, p.getStreet());
-			ps.setString(7, p.getCity());
-			ps.setString(8, p.getState());
-			ps.setInt(9, p.getZipcode());
 			
-			String primaryName = p.getPrimaryName();
+			if(Sanitizer.isZip(p.getZipcode())) {
+				ps.setInt(9, p.getZipcode());
+			} else {
+				model.addAttribute("message", "ERROR: The zipcode must be either exactly 5 or 9 digits long. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_register";
+			}
+			
+			
+			PreparedStatement pst = con.prepareStatement("select specialty from doctor where doctorname = ?");
+			pst.setString(1, p.getPrimaryName());
+			ResultSet resultset = pst.executeQuery();
+			if (resultset.next()) {
+				String specialty = resultset.getString(1);
+				if (specialty.equals("Family Medicine") || specialty.equals("Internal Medicine") || specialty.equals("Pediatrics")) {
+					ps.setString(5, primaryName);
+				}
+				else {
+					model.addAttribute("message", "ERROR: Invalid primary doctor - Choose a primary doctor that specializes in Family Medicine, Internal Medicine, and Pediatrics.");
+					model.addAttribute("Patient", p);
+					return "patient_register";
+				}
+			}
 			
 			ps.executeUpdate();
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next()) p.setPatientId((int)rs.getLong(1));
-			
 			
 			ps = con.prepareStatement("select doctorssn from doctor where doctorname = ?");
 			ps.setString(1, primaryName);
@@ -101,20 +138,14 @@ public class ControllerPatient {
 				p.setPrimaryID(rs.getInt(1));
 			} 
 			
-			ps = con.prepareStatement("update patient set doctorssn = ? where patientid = ?");
+			ps = con.prepareStatement("update patient set doctorssn = ? where primarydoctor = ?");
 			ps.setInt(1, p.getPrimaryID());
-			ps.setInt(2, p.getPatientId());
-			int rowCount = ps.executeUpdate();
+			ps.setString(2, p.getPrimaryName());
+			ps.executeUpdate();
 			
-			if(rowCount == 1) {
-				ps = con.prepareStatement("alter table patient add foreign key (doctorssn) references doctor (doctorssn)");
-				ps.executeUpdate();
-			}
-			
-			// display message and patient information
 			model.addAttribute("message", "Registration successful.");
 			model.addAttribute("Patient", p);
-			return "patient_get";
+			return "patient_show";
 			
 		} catch (SQLException e) {
 			model.addAttribute("message", "SQL Error."+e.getMessage());
@@ -184,9 +215,9 @@ public class ControllerPatient {
 	 *  Display patient profile for patient id.
 	 */
 	@GetMapping("/patient/edit/{patientId}")
+	//@PathVariable int patientId
 	public String updatePatient(@PathVariable int patientId, Model model) {
 
-		// TODO Complete database logic search for patient by id.
 		Patient p = new Patient();
 		p.setPatientId(patientId);
 		try (Connection con = getConnection();) {
@@ -206,9 +237,9 @@ public class ControllerPatient {
 				p.setZipcode(rs.getInt(8));
 				p.setPrimaryName(rs.getString(9));
 				model.addAttribute("Patient", p);
-				return "patient_show";
+				return "patient_edit";
 			} else {
-				model.addAttribute("message", "Doctor not found.");
+				model.addAttribute("message", "Patient not found.");
 				model.addAttribute("Patient", p);
 				return "patient_get";
 			}
@@ -217,8 +248,74 @@ public class ControllerPatient {
 			model.addAttribute("message", "SQL Error."+e.getMessage());
 			model.addAttribute("Patient", p);
 			return "patient_get";
-			
 		}
+//		try (Connection con = getConnection();) {
+//
+//			PreparedStatement ps = con.prepareStatement("update patient set street = ?, city = ?, state = ?, zip = ?, primarydoctor = ? where patientid = ?");
+//			if(!p.getStreet().isEmpty() && Sanitizer.isStreet(p.getStreet())) {
+//				ps.setString(1,  p.getStreet());
+//			} else {
+//				model.addAttribute("message", "ERROR: The street must only contain letters and numerical digits.");
+//				model.addAttribute("Patient", p);
+//				return "patient_edit";
+//			}
+//			if (!p.getCity().isEmpty() && !p.getState().isEmpty()
+//					&& Sanitizer.isString(p.getCity())
+//					&& Sanitizer.isString(p.getState())) {
+//				ps.setString(2, p.getCity());
+//				ps.setString(3, p.getState());
+//			} else {
+//				model.addAttribute("message", "ERROR: The city and state cannot be empty and must only contain letters A-Z. Please try again.");
+//				model.addAttribute("Patient", p);
+//				return "patient_edit";
+//			}
+//			if(Sanitizer.isZip(p.getZipcode())) {
+//				ps.setInt(4, p.getZipcode());
+//			} else {
+//				model.addAttribute("message", "ERROR: The zipcode must be either exactly 5 or 9 digits long. Please try again.");
+//				model.addAttribute("Patient", p);
+//				return "patient_edit";
+//			}
+//			if (!p.getPrimaryName().isEmpty() && Sanitizer.isString(p.getPrimaryName())) {
+//				ps.setString(5, p.getPrimaryName());
+//			} else {
+//				model.addAttribute("message", "ERROR: Names cannot be empty and must only contain letters A-Z. Please try again.");
+//				model.addAttribute("Patient", p);
+//				return "patient_edit";	
+//			}
+//			
+//			ps.setInt(6,  patientId);
+//			int rc = ps.executeUpdate();
+//			
+//			ps = con.prepareStatement("select doctorssn from doctor where doctorname = ?");
+//			ps.setString(1, p.getPrimaryName());
+//			ResultSet rs = ps.executeQuery();
+//			if (rs.next()) {
+//				p.setPrimaryID(rs.getInt(1));
+//			} 
+//			
+//			ps = con.prepareStatement("update patient set doctorssn = ? where patientid = ?");
+//			ps.setInt(1, p.getPrimaryID());
+//			ps.setInt(2, patientId);
+//			ps.executeUpdate();
+//			
+//			if (rc==1) {
+//				model.addAttribute("message", "Update successful");
+//				model.addAttribute("Patient", p);
+//				
+//				return "patient_show";
+//				
+//			}else {
+//				model.addAttribute("message", "Error. Update was not successful");
+//				model.addAttribute("Patient", p);
+//				return "patient_edit";
+//			}
+//				
+//		} catch (SQLException e) {
+//			model.addAttribute("message", "SQL Error."+e.getMessage());
+//			model.addAttribute("Patient", p);
+//			return "patient_edit";
+//		}
 	}
 	
 	
@@ -232,11 +329,38 @@ public class ControllerPatient {
 		try (Connection con = getConnection();) {
 
 			PreparedStatement ps = con.prepareStatement("update patient set street = ?, city = ?, state = ?, zip = ?, primarydoctor = ? where patientid = ?");
-			ps.setString(1,  p.getStreet());
-			ps.setString(2, p.getCity());
-			ps.setString(3, p.getState());
-			ps.setInt(4,  p.getZipcode());
-			ps.setString(5, p.getPrimaryName());
+			if(!p.getStreet().isEmpty() && Sanitizer.isStreet(p.getStreet())) {
+				ps.setString(1,  p.getStreet());
+			} else {
+				model.addAttribute("message", "ERROR: The street must only contain letters and numerical digits.");
+				model.addAttribute("Patient", p);
+				return "patient_edit";
+			}
+			if (!p.getCity().isEmpty() && !p.getState().isEmpty()
+					&& Sanitizer.isString(p.getCity())
+					&& Sanitizer.isString(p.getState())) {
+				ps.setString(2, p.getCity());
+				ps.setString(3, p.getState());
+			} else {
+				model.addAttribute("message", "ERROR: The city and state cannot be empty and must only contain letters A-Z. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_edit";
+			}
+			if(Sanitizer.isZip(p.getZipcode())) {
+				ps.setInt(4, p.getZipcode());
+			} else {
+				model.addAttribute("message", "ERROR: The zipcode must be either exactly 5 or 9 digits long. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_edit";
+			}
+			if (!p.getPrimaryName().isEmpty() && Sanitizer.isString(p.getPrimaryName())) {
+				ps.setString(5, p.getPrimaryName());
+			} else {
+				model.addAttribute("message", "ERROR: Names cannot be empty and must only contain letters A-Z. Please try again.");
+				model.addAttribute("Patient", p);
+				return "patient_edit";	
+			}
+			
 			ps.setInt(6,  p.getPatientId());
 			int rc = ps.executeUpdate();
 			
@@ -279,5 +403,4 @@ public class ControllerPatient {
 		Connection conn = jdbcTemplate.getDataSource().getConnection();
 		return conn;
 	}
-
 }
